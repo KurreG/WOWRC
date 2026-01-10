@@ -68,11 +68,12 @@ function GetClassRelevantStats()
     elseif class == "DEATHKNIGHT" then
         stats.runicPower = GetRunicPowerCount()
     elseif class == "PALADIN" then
---[[         stats.mana = GetManaCount() ]]
+        stats.mana = GetManaCount()
         stats.holyPower = GetHolyPowerCount()
     elseif class == "MONK" then
         stats.chi = GetChiCount()
---[[         stats.mana = GetManaCount() ]]
+        stats.energy = GetEnergyCount()
+        stats.mana = GetManaCount()
     elseif class == "DRUID" then
         local form = GetShapeshiftForm()
         if form == 1 then -- Bear form
@@ -103,6 +104,25 @@ statsFrame:EnableMouse(true)
 local bg = statsFrame:CreateTexture(nil, "BACKGROUND")
 bg:SetAllPoints(statsFrame)
 bg:SetColorTexture(0, 0, 0, 0.5)
+
+-- Create resize handle
+local resizeHandle = statsFrame:CreateTexture(nil, "OVERLAY")
+resizeHandle:SetSize(16, 16)
+resizeHandle:SetPoint("BOTTOMRIGHT", statsFrame, "BOTTOMRIGHT", 0, 0)
+resizeHandle:SetColorTexture(0.5, 0.5, 0.5, 0.7)
+resizeHandle:SetCursor("Interface\\Cursor\\UI-Cursor-SizeNESW.blp")
+statsFrame:SetResizeBounds(150, 80)
+local resizeFrame = CreateFrame("Frame", nil, statsFrame)
+resizeFrame:SetAllPoints(resizeHandle)
+resizeFrame:EnableMouse(true)
+resizeFrame:SetScript("OnMouseDown", function(self, button)
+    if button == "LeftButton" then
+        statsFrame:StartSizing("BOTTOMRIGHT")
+    end
+end)
+resizeFrame:SetScript("OnMouseUp", function(self, button)
+    statsFrame:StopMovingOrSizing()
+end)
 
 -- Create text for class and spec display
 local classSpecText = statsFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
