@@ -6,3 +6,4 @@
 *.swp
 *.out
 *.old
+.vscode/
