@@ -97,10 +97,10 @@ end
 -- Create a simple frame for text display
 local infoFrame = CreateFrame("Frame", "ClassInfoDisplay", UIParent)
 infoFrame:SetSize(300, 100)
-infoFrame:SetPoint("CENTER", 0, 0)
+infoFrame:SetPoint("CENTER", 0, -100)
 
 -- Create text for stats display
-local statsText = infoFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+local statsText = infoFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 statsText:SetPoint("CENTER", infoFrame, "CENTER", 0, 0)
 statsText:SetText("Loading...")
 statsText:SetTextColor(1, 1, 1, 1)  -- White text
