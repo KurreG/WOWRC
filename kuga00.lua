@@ -3,6 +3,7 @@
 
 -- Declare infoFrame globally so it can be accessed from options UI
 local infoFrame
+local kuga00Version
 
 -- Event frame to initialize saved vars
 local evt = CreateFrame("Frame")
@@ -25,6 +26,7 @@ evt:SetScript("OnEvent", function(self, event, name)
     end
 
     local ver = resolveVersion()
+    kuga00Version = ver
     print("kuga00 v" .. tostring(ver) .. " loaded")
     print("Access options via: ESC > Interface > AddOns > kuga00, or type /kuga00 opt")
     if not kuga00Settings then kuga00Settings = {} end
@@ -222,7 +224,11 @@ function CreateOptionsUI()
 
     configFrame.title = configFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     configFrame.title:SetPoint("TOP", 0, -5)
-    configFrame.title:SetText("kuga00 Options")
+    local titleText = "kuga00 Options"
+    if kuga00Version then
+        titleText = "kuga00 Options v" .. kuga00Version
+    end
+    configFrame.title:SetText(titleText)
 
     -- Scroll frame for all content
     local scrollFrame = CreateFrame("ScrollFrame", nil, configFrame, "UIPanelScrollFrameTemplate")
