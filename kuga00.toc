@@ -5,6 +5,6 @@
 ## Version: 0.1beta
 ## DefaultState: Enabled
 ## LoadOnDemand: 0
-## SavedVariables: 
+## SavedVariables: kuga00Settings
 
 kuga00.lua
