@@ -23,7 +23,7 @@ evt:SetScript("OnEvent", function(self, event, name)
 
     local ver = resolveVersion()
     print("kuga00 v" .. tostring(ver) .. " loaded")
-    print("Access options via: ESC → Interface → AddOns → kuga00, or type /kuga00 opt")
+    print("Access options via: ESC > Interface > AddOns > kuga00, or type /kuga00 opt")
     if not kuga00Settings then kuga00Settings = {} end
     if not kuga00Settings.enabledClasses then
         kuga00Settings.enabledClasses = {
