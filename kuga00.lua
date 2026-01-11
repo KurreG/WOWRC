@@ -202,7 +202,6 @@ function GetClassRelevantStats()
     elseif class == "DEATHKNIGHT" then
         stats.runicPower = ensureNumber(GetRunicPowerCount())
     elseif class == "PALADIN" then
-        stats.mana = ensureNumber(GetManaCount())
         stats.holyPower = ensureNumber(GetHolyPowerCount())
     elseif class == "MONK" then
         local spec = GetSpecialization()
@@ -211,7 +210,7 @@ function GetClassRelevantStats()
         elseif spec == 3 then -- Windwalker
             stats.chi = ensureNumber(GetChiCount())
         else -- Mistweaver
-            stats.mana = ensureNumber(GetManaCount())
+            -- no tracked resource
         end
     elseif class == "DRUID" then
         local form = GetShapeshiftForm()
@@ -221,10 +220,10 @@ function GetClassRelevantStats()
             stats.comboPoints = ensureNumber(GetComboPointsCount())
             stats.energy = ensureNumber(GetEnergyCount())
         else -- Caster form
-            stats.mana = ensureNumber(GetManaCount())
+            -- no tracked resource
         end
     elseif class == "PRIEST" or class == "MAGE" or class == "SHAMAN" then
-        stats.mana = ensureNumber(GetManaCount())
+        -- no tracked resource
     end
     
     return stats
