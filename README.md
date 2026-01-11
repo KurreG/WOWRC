@@ -113,7 +113,7 @@ Settings are saved in `SavedVariables\kuga00Settings.lua` including:
 
 ## Version
 Current: 0.5
-Interface: 120001 (The War Within)
+Interface: 120001 (The War Within | Midnight)
 
 ## Author
 kuga00
