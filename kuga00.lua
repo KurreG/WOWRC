@@ -72,12 +72,14 @@ SlashCmdList["KUGA"] = function(msg)
         cls = cls:upper()
         kuga00Settings.enabledClasses[cls] = true
         print("kuga00: enabled for class " .. cls)
+        print("Type /reload to apply changes")
         if infoFrame then infoFrame:Show() end
         return
     elseif cmd == "disable" and cls ~= "" then
         cls = cls:upper()
         kuga00Settings.enabledClasses[cls] = false
         print("kuga00: disabled for class " .. cls)
+        print("Type /reload to apply changes")
         return
     elseif cmd == "status" then
         print("kuga00 class status:")
@@ -140,6 +142,9 @@ function CreateOptionsUI()
         cb:SetChecked(enabled)
         cb:SetScript("OnClick", function(self)
             kuga00Settings.enabledClasses[cls] = self:GetChecked()
+            local status = self:GetChecked() and "enabled" or "disabled"
+            print("kuga00: " .. status .. " for class " .. cls)
+            print("Type /reload to apply changes")
         end)
         configFrame.checkboxes[cls] = cb
         y = y - 24
@@ -220,9 +225,11 @@ function CreateOptionsUI()
     end
 
     colorButton:SetScript("OnClick", function()
-        -- For now, just open a simple message - color picker is too problematic
-        print("Color picker support coming soon. Current color: Green (0, 1, 0)")
-        print("You can modify colors by editing the saved variables manually.")
+        print("To change the highlight color, edit your SavedVariables:")
+        print("  /kuga00Settings.colors.highlight = {r = 1, g = 0, b = 0}  -- red")
+        print("  /kuga00Settings.colors.highlight = {r = 0, g = 1, b = 0}  -- green (default)")
+        print("  /kuga00Settings.colors.highlight = {r = 0, g = 0, b = 1}  -- blue")
+        print("Values should be 0-1 for each color component (R, G, B)")
     end)
 
     -- Close button
