@@ -302,6 +302,9 @@ local function UpdateClassStats()
                     if key == "chi" and safeAtLeast(numValue, 2) then
                         statStr = "|cff00ff00" .. statStr .. "|r"
                         highlight = true
+                    elseif key == "holyPower" and safeAtLeast(numValue, 3) then
+                        statStr = "|cff00ff00" .. statStr .. "|r"
+                        highlight = true
                     end
 
                     table.insert(parts, statStr)
