@@ -112,7 +112,7 @@ Settings are saved in `SavedVariables\kuga00Settings.lua` including:
 - Resources using secret values will display as 0 in restricted PvP areas but work normally in PvE content
 
 ## Version
-Current: 0.3beta
+Current: 0.5
 Interface: 120001 (The War Within)
 
 ## Author
