@@ -1,5 +1,3 @@
-print("kuga00 loaded")
-
 -- Saved settings (persisted via TOC SavedVariables)
 -- kuga00Settings = { enabledClasses = { ROUGE=true, ... } }
 
@@ -8,6 +6,23 @@ local evt = CreateFrame("Frame")
 evt:RegisterEvent("ADDON_LOADED")
 evt:SetScript("OnEvent", function(self, event, name)
     if name ~= "kuga00" then return end
+    local function resolveVersion()
+        -- Try modern API first
+        if C_AddOns and C_AddOns.GetAddOnMetadata then
+            local v = C_AddOns.GetAddOnMetadata(name, "Version") or C_AddOns.GetAddOnMetadata("kuga00", "Version")
+            if v and v ~= "" then return v end
+        end
+        -- Fallback to legacy API
+        if GetAddOnMetadata then
+            local v = GetAddOnMetadata(name, "Version") or GetAddOnMetadata("kuga00", "Version")
+            if v and v ~= "" then return v end
+        end
+        -- Last resort: hardcoded fallback matching TOC
+        return "0.1beta"
+    end
+
+    local ver = resolveVersion()
+    print("kuga00 v" .. tostring(ver) .. " loaded")
     if not kuga00Settings then kuga00Settings = {} end
     if not kuga00Settings.enabledClasses then
         kuga00Settings.enabledClasses = {
@@ -213,13 +228,14 @@ function GetClassRelevantStats()
             -- no tracked resource
         end
     elseif class == "DRUID" then
+        local spec = GetSpecialization()
         local form = GetShapeshiftForm()
-        if form == 1 then -- Bear form
+        -- Only track resources for Feral (spec 2) and Guardian (spec 3)
+        if spec == 3 and form == 1 then -- Guardian in Bear form
             stats.rage = ensureNumber(GetRageCount())
-        elseif form == 2 then -- Cat form
+        elseif spec == 2 and form == 2 then -- Feral in Cat form
             stats.comboPoints = ensureNumber(GetComboPointsCount())
-            stats.energy = ensureNumber(GetEnergyCount())
-        else -- Caster form
+        else -- Balance, Resto, or wrong form
             -- no tracked resource
         end
     elseif class == "PRIEST" or class == "MAGE" or class == "SHAMAN" then
@@ -293,10 +309,9 @@ local function UpdateClassStats()
             end
         end
 
-        local finalText = "No stats available"
+        local finalText = ""
         if #parts > 0 then
             -- Build string manually instead of concat to avoid issues
-            finalText = ""
             for i, part in ipairs(parts) do
                 if i == 1 then
                     finalText = part
@@ -304,15 +319,22 @@ local function UpdateClassStats()
                     finalText = finalText .. "\n" .. part
                 end
             end
-        end
-
-        -- Always update without storing state
-        statsText:SetText(finalText)
-        -- Also tint the whole text if any stat is highlighted (so energy/chi green works even if color codes are stripped)
-        if highlight then
-            statsText:SetTextColor(0, 1, 0, 1)
+            -- Show frame and update text
+            if infoFrame and not infoFrame:IsShown() then
+                infoFrame:Show()
+            end
+            statsText:SetText(finalText)
+            -- Also tint the whole text if any stat is highlighted (so energy/chi green works even if color codes are stripped)
+            if highlight then
+                statsText:SetTextColor(0, 1, 0, 1)
+            else
+                statsText:SetTextColor(1, 1, 1, 1)
+            end
         else
-            statsText:SetTextColor(1, 1, 1, 1)
+            -- Hide frame when no stats to display
+            if infoFrame and infoFrame:IsShown() then
+                infoFrame:Hide()
+            end
         end
     end)
     if not success then
