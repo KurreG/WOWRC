@@ -43,6 +43,7 @@ evt:SetScript("OnEvent", function(self, event, name)
             PRIEST = true,
             MAGE = true,
             SHAMAN = true,
+            DEMONHUNTER = true,
         }
     end
     if not kuga00Settings.thresholds then
@@ -165,6 +166,8 @@ SlashCmdList["KUGA"] = function(msg)
     elseif cmd == "options" or cmd == "opt" then
         if configFrame then
             configFrame:Show()
+        else
+            print("kuga00: Options UI not loaded. Try /reload")
         end
         return
     else
@@ -185,13 +188,13 @@ function CreateOptionsUI()
         kuga00Settings.position = { x = 0, y = -100 }
     end
     configFrame = CreateFrame("Frame", "kuga00ConfigFrame", UIParent, "BasicFrameTemplateWithInset")
-    configFrame:SetSize(500, 600)
+    configFrame:SetSize(500, 700)
     configFrame:SetPoint("CENTER", 0, 0)
     configFrame:SetMovable(true)
     configFrame:SetResizable(true)
     -- Use SetResizeBounds for compatibility across client versions
     if configFrame.SetResizeBounds then
-        configFrame:SetResizeBounds(380, 420)
+        configFrame:SetResizeBounds(500, 700)
     end
     configFrame:EnableMouse(true)
     configFrame:RegisterForDrag("LeftButton")
@@ -224,9 +227,9 @@ function CreateOptionsUI()
 
     configFrame.title = configFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     configFrame.title:SetPoint("TOP", 0, -5)
-    local titleText = "kuga00 Options"
+    local titleText = "kuga00 - Class-Specific Resource Counters Options"
     if kuga00Version then
-        titleText = "kuga00 Options v" .. kuga00Version
+        titleText = "kuga00 - Class-Specific Resource Counters  Options v" .. kuga00Version
     end
     configFrame.title:SetText(titleText)
 
@@ -237,7 +240,7 @@ function CreateOptionsUI()
     
     local scrollChild = CreateFrame("Frame")
     scrollFrame:SetScrollChild(scrollChild)
-    scrollChild:SetSize(450, 1200)  -- Increased height to accommodate all content
+    scrollChild:SetSize(450, 600)  -- Adjusted to fit actual content
     
     -- Keep references for resize handling
     configFrame.scrollFrame = scrollFrame
@@ -248,12 +251,23 @@ function CreateOptionsUI()
     classLabel:SetPoint("TOPLEFT", 10, -10)
     classLabel:SetText("Enable/Disable Classes:")
 
-    local classes = {"ROGUE","WARRIOR","HUNTER","WARLOCK","DEATHKNIGHT","PALADIN","MONK","DRUID","PRIEST","MAGE","SHAMAN"}
-    local y = -35
+    local classes = {"ROGUE","WARRIOR","HUNTER","WARLOCK","PALADIN","MONK","DRUID","PRIEST","MAGE","SHAMAN","DEMONHUNTER","DEATHKNIGHT"}
     configFrame.checkboxes = {}
+    local y = -35
+    local col1X = 20
+    local col2X = 180
+    local col3X = 340
+    
     for i, cls in ipairs(classes) do
         local cb = CreateFrame("CheckButton", "kuga00_cb_"..cls, scrollChild, "UICheckButtonTemplate")
-        cb:SetPoint("TOPLEFT", 20, y)
+        -- First 4 classes in column 1, next 4 in column 2, rest in column 3
+        if i <= 4 then
+            cb:SetPoint("TOPLEFT", col1X, y - ((i - 1) * 24))
+        elseif i <= 8 then
+            cb:SetPoint("TOPLEFT", col2X, y - ((i - 5) * 24))
+        else
+            cb:SetPoint("TOPLEFT", col3X, y - ((i - 9) * 24))
+        end
         cb.text:SetText(cls)
         local enabled = kuga00Settings.enabledClasses[cls]
         cb:SetChecked(enabled)
@@ -264,8 +278,10 @@ function CreateOptionsUI()
             print("Type /reload to apply changes")
         end)
         configFrame.checkboxes[cls] = cb
-        y = y - 24
     end
+    
+    -- Calculate y position after checkboxes (4 rows in columns 1 and 2)
+    local y = y - (4 * 24)
     -- Display options
     local displayY = y - 15
     local displayLabel = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -425,7 +441,8 @@ function CreateOptionsUI()
         slider:SetPoint("TOPLEFT", 20, thresholdY)
         slider:SetMinMaxValues(threshold.min, threshold.max)
         slider:SetValue(kuga00Settings.thresholds[threshold.key] or threshold.min)
-        slider:SetValueStep(1)
+        local stepValue = threshold.step or 1
+        slider:SetValueStep(stepValue)
         slider:SetObeyStepOnDrag(true)
         slider.tooltipText = "Set threshold for " .. threshold.label
         getglobal(slider:GetName() .. 'Low'):SetText(threshold.min)
@@ -502,72 +519,171 @@ end
 
 -- Function to get current energy
 function GetEnergyCount()
-    local result = UnitPower("player", 3)
-    return type(result) == "number" and result or 0
+    local ok, result = pcall(function()
+        return UnitPower("player", 3)
+    end)
+    if ok and type(result) == "number" then
+        return result
+    end
+    return 0
 end
 
 -- Function to get current rage
 function GetRageCount()
-    local result = UnitPower("player", 1)
-    return type(result) == "number" and result or 0
+    local ok, result = pcall(function()
+        return UnitPower("player", 1)
+    end)
+    if ok and type(result) == "number" then
+        return result
+    end
+    return 0
+end
+
+-- Function to get current fury
+function GetFuryCount()
+    local ok, result = pcall(function()
+        return UnitPower("player", 17)
+    end)
+    if ok and type(result) == "number" then
+        return result
+    end
+    return 0
 end
 
 -- Function to get current focus
 function GetFocusCount()
-    local result = UnitPower("player", 2)
-    return type(result) == "number" and result or 0
+    local ok, result = pcall(function()
+        return UnitPower("player", 2)
+    end)
+    if ok and type(result) == "number" then
+        return result
+    end
+    return 0
 end
 
 -- Function to get current mana
 function GetManaCount()
-    local result = UnitPower("player", 0)
-    return type(result) == "number" and result or 0
+    local ok, result = pcall(function()
+        return UnitPower("player", 0)
+    end)
+    if ok and type(result) == "number" then
+        return result
+    end
+    return 0
 end
 
 -- Function to get current runic power
 function GetRunicPowerCount()
-    local result = UnitPower("player", 6)
-    return type(result) == "number" and result or 0
-end
-
--- Function to get current maelstrom weapon stacks
-function GetMaelstromCount()
-    -- Use only C_UnitAuras (combat-safe, no AuraUtil/UnitBuff)
-    if C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID then
-        -- Retail spellID for Maelstrom Weapon
-        local aura = C_UnitAuras.GetPlayerAuraBySpellID(344179)
-        if aura then
-            if aura.applications then return aura.applications end
-            if aura.charges then return aura.charges end
-        end
-        -- Legacy spellID fallback (older expansions)
-        local legacy = C_UnitAuras.GetPlayerAuraBySpellID(187878)
-        if legacy then
-            if legacy.applications then return legacy.applications end
-            if legacy.charges then return legacy.charges end
-        end
+    local ok, result = pcall(function()
+        return UnitPower("player", 6)
+    end)
+    if ok and type(result) == "number" then
+        return result
     end
-
-    -- If C_UnitAuras missing, return 0
     return 0
 end
 
 -- Function to get current chi
 function GetChiCount()
-    local result = UnitPower("player", 12)
-    return type(result) == "number" and result or 0
+    local ok, result = pcall(function()
+        return UnitPower("player", 12)
+    end)
+    if ok and type(result) == "number" then
+        return result
+    end
+    return 0
 end
 
 -- Function to get current soul shards
 function GetSoulShardCount()
-    local result = UnitPower("player", 7)
-    return type(result) == "number" and result or 0
+    local ok, result = pcall(function()
+        return UnitPower("player", 7)
+    end)
+    if ok and type(result) == "number" then
+        return result
+    end
+    return 0
 end
 
 -- Function to get current holy power
 function GetHolyPowerCount()
-    local result = UnitPower("player", 9)
-    return type(result) == "number" and result or 0
+    local ok, result = pcall(function()
+        return UnitPower("player", 9)
+    end)
+    if ok and type(result) == "number" then
+        return result
+    end
+    return 0
+end
+
+-- Function to get current maelstrom (Elemental Shaman)
+function GetMaelstromCount()
+    local ok, result = pcall(function()
+        return UnitPower("player", 11)
+    end)
+    if ok and type(result) == "number" then
+        return result
+    end
+    return 0
+end
+
+-- Function to get current insanity (Shadow Priest)
+function GetInsanityCount()
+    local ok, result = pcall(function()
+        return UnitPower("player", 13)
+    end)
+    if ok and type(result) == "number" then
+        return result
+    end
+    return 0
+end
+-- Function to get current icicles (Frost Mage)
+function GetIciclesCount()
+    -- Try using C_UnitAuras to get icicle stacks
+    if C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID then
+        local ok, aura = pcall(function()
+            return C_UnitAuras.GetPlayerAuraBySpellID(148022)
+        end)
+        if ok and aura then
+            if aura.applications then return aura.applications end
+            if aura.charges then return aura.charges end
+            if aura.stacks then return aura.stacks end
+        end
+    end
+    return 0
+end
+-- Function to get current icicles (Frost Mage)
+function GetIciclesCount()
+    print("DEBUG GetIciclesCount called")
+    -- Try using C_UnitAuras to get icicle stacks
+    if C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID then
+        print("DEBUG C_UnitAuras available, checking for icicles (spell 148022)")
+        local ok, aura = pcall(function()
+            return C_UnitAuras.GetPlayerAuraBySpellID(148022)
+        end)
+        print(string.format("DEBUG pcall result: ok=%s, aura=%s", tostring(ok), tostring(aura)))
+        if ok and aura then
+            print(string.format("DEBUG aura found, applications=%s, charges=%s, stacks=%s", 
+                tostring(aura.applications), tostring(aura.charges), tostring(aura.stacks)))
+            if aura.applications then return aura.applications end
+            if aura.charges then return aura.charges end
+            if aura.stacks then return aura.stacks end
+        end
+    else
+        print("DEBUG C_UnitAuras not available")
+    end
+    return 0
+end
+
+-- Function to get current arcane charges (Arcane Mage)
+function GetArcaneChargesCount()
+    local ok, result = pcall(function()
+        return UnitPower("player", 16)
+    end)
+    if ok and type(result) == "number" then
+        return result
+    end
+    return 0
 end
 
 -- Function to get player class and spec
@@ -600,15 +716,13 @@ function GetClassRelevantStats()
         stats.soulShards = ensureNumber(GetSoulShardCount())
     elseif class == "DEATHKNIGHT" then
         stats.runicPower = ensureNumber(GetRunicPowerCount())
-    elseif class == "PALADIN" then
-        stats.holyPower = ensureNumber(GetHolyPowerCount())
     elseif class == "MONK" then
         local spec = GetSpecialization()
         if spec == 1 then -- Brewmaster
             -- no tracked resource
         elseif spec == 3 then -- Windwalker
             stats.chi = ensureNumber(GetChiCount())
-        else -- Mistweaver
+        elseif spec == 2 then -- Mistweaver
             -- no tracked resource
         end
     elseif class == "DRUID" then
@@ -619,11 +733,38 @@ function GetClassRelevantStats()
             stats.rage = ensureNumber(GetRageCount())
         elseif spec == 2 and form == 2 then -- Feral in Cat form
             stats.comboPoints = ensureNumber(GetComboPointsCount())
-        else -- Balance, Resto, or wrong form
-            -- no tracked resource
+        elseif spec == 4 then -- Restoration (healer)
+            local success, pct = pcall(function()
+                local current = UnitPower("player", 0)
+                local max = UnitPowerMax("player", 0)
+                if current and max and max > 0 then
+                    return math.floor((current / max) * 100)
+                end
+                return nil
+            end)
+            if success and pct then
+                stats.mana = pct
+            end
         end
-    elseif class == "PRIEST" or class == "MAGE" or class == "SHAMAN" then
-        -- no tracked resource
+    elseif class == "PRIEST" then
+        local spec = GetSpecialization()
+        if spec == 3 then -- Shadow
+            stats.insanity = ensureNumber(GetInsanityCount())
+        end
+    elseif class == "MAGE" then
+        local spec = GetSpecialization()
+        if spec == 1 then -- Arcane
+            stats.arcaneCharges = ensureNumber(GetArcaneChargesCount())
+        end
+    elseif class == "PALADIN" then
+        stats.holyPower = ensureNumber(GetHolyPowerCount())
+    elseif class == "SHAMAN" then
+        local spec = GetSpecialization()
+        if spec == 1 then -- Elemental
+            stats.maelstrom = ensureNumber(GetMaelstromCount())
+        end
+    elseif class == "DEMONHUNTER" then
+        stats.fury = ensureNumber(GetFuryCount())
     end
     
     return stats
@@ -678,7 +819,10 @@ local function UpdateClassStats()
 
         -- helper to guard against protected/secret values when comparing
         local function safeAtLeast(val, threshold)
-            if type(val) ~= "number" then return false end
+            if type(val) ~= "number" or type(threshold) ~= "number" then 
+                return false 
+            end
+            -- Comparison must be in pcall because secret values throw on comparison
             local ok, res = pcall(function()
                 return val >= threshold
             end)

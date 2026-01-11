@@ -13,7 +13,10 @@ A World of Warcraft addon that displays class-specific resource counters (Combo 
 - **Paladin**: Holy Power
 - **Monk**: Chi (Windwalker only)
 - **Druid**: Rage (Guardian bear form) / Combo Points (Feral cat form)
-- **Priest/Mage/Shaman**: No tracked resources
+- **Priest**: Insanity (Shadow only)
+- **Mage**: Arcane Charges (Arcane only)
+- **Shaman**: Maelstrom (Elemental only)
+- **Demon Hunter**: Fury
 
 ### Display Options
 - **Show/Hide Power Names**: Toggle between "Chi: 5" or just "5"
