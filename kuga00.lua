@@ -39,6 +39,23 @@ evt:SetScript("OnEvent", function(self, event, name)
             SHAMAN = true,
         }
     end
+    if not kuga00Settings.thresholds then
+        kuga00Settings.thresholds = {
+            chi = 2,
+            holyPower = 3,
+            comboPoints = 5,
+            energy = 55,
+            rage = 50,
+            focus = 50,
+            runicPower = 60,
+            soulShards = 3,
+        }
+    end
+    if not kuga00Settings.colors then
+        kuga00Settings.colors = {
+            highlight = { r = 0, g = 1, b = 0 }, -- green
+        }
+    end
     print("kuga00 settings loaded")
 end)
 
@@ -85,44 +102,133 @@ end
 -- Create options UI with checkboxes per class
 function CreateOptionsUI()
     if configFrame then return end
-    configFrame = CreateFrame("Frame", "kuga00ConfigFrame", UIParent)
-    configFrame:SetSize(300, 360)
+    configFrame = CreateFrame("Frame", "kuga00ConfigFrame", UIParent, "BasicFrameTemplateWithInset")
+    configFrame:SetSize(500, 600)
     configFrame:SetPoint("CENTER", 0, 0)
+    configFrame:SetMovable(true)
     configFrame:EnableMouse(true)
+    configFrame:RegisterForDrag("LeftButton")
+    configFrame:SetScript("OnDragStart", configFrame.StartMoving)
+    configFrame:SetScript("OnDragStop", configFrame.StopMovingOrSizing)
 
-    local bg = configFrame:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints(configFrame)
-    bg:SetColorTexture(0, 0, 0, 0.7)
+    configFrame.title = configFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    configFrame.title:SetPoint("TOP", 0, -5)
+    configFrame.title:SetText("kuga00 Options")
 
-    local title = configFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOP", configFrame, "TOP", 0, -10)
-    title:SetText("kuga00 Options")
+    -- Scroll frame for classes
+    local scrollFrame = CreateFrame("ScrollFrame", nil, configFrame, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", 10, -30)
+    scrollFrame:SetPoint("BOTTOMRIGHT", -30, 200)
+    
+    local scrollChild = CreateFrame("Frame")
+    scrollFrame:SetScrollChild(scrollChild)
+    scrollChild:SetSize(450, 300)
+
+    -- Class enable/disable checkboxes
+    local classLabel = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    classLabel:SetPoint("TOPLEFT", 10, -10)
+    classLabel:SetText("Enable/Disable Classes:")
 
     local classes = {"ROGUE","WARRIOR","HUNTER","WARLOCK","DEATHKNIGHT","PALADIN","MONK","DRUID","PRIEST","MAGE","SHAMAN"}
-    local y = -40
+    local y = -35
     configFrame.checkboxes = {}
     for i, cls in ipairs(classes) do
-        local cb = CreateFrame("CheckButton", "kuga00_cb_"..cls, configFrame, "UICheckButtonTemplate")
-        cb:SetPoint("TOPLEFT", configFrame, "TOPLEFT", 16, y)
+        local cb = CreateFrame("CheckButton", "kuga00_cb_"..cls, scrollChild, "UICheckButtonTemplate")
+        cb:SetPoint("TOPLEFT", 20, y)
         cb.text:SetText(cls)
-        local enabled = true
-        if kuga00Settings and kuga00Settings.enabledClasses and type(kuga00Settings.enabledClasses[cls]) == "boolean" then
-            enabled = kuga00Settings.enabledClasses[cls]
-        end
+        local enabled = kuga00Settings.enabledClasses[cls]
         cb:SetChecked(enabled)
         cb:SetScript("OnClick", function(self)
-            local checked = self:GetChecked()
-            if not kuga00Settings then kuga00Settings = { enabledClasses = {} } end
-            if not kuga00Settings.enabledClasses then kuga00Settings.enabledClasses = {} end
-            kuga00Settings.enabledClasses[cls] = checked
+            kuga00Settings.enabledClasses[cls] = self:GetChecked()
         end)
         configFrame.checkboxes[cls] = cb
         y = y - 24
     end
 
+    -- Threshold settings
+    local thresholdY = -420
+    local thresholdLabel = configFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    thresholdLabel:SetPoint("TOPLEFT", 20, thresholdY)
+    thresholdLabel:SetText("Threshold Values:")
+
+    local thresholds = {
+        {key = "chi", label = "Chi", min = 1, max = 6},
+        {key = "holyPower", label = "Holy Power", min = 1, max = 5},
+        {key = "comboPoints", label = "Combo Points", min = 1, max = 7},
+    }
+
+    configFrame.sliders = {}
+    thresholdY = thresholdY - 25
+    for i, threshold in ipairs(thresholds) do
+        local slider = CreateFrame("Slider", "kuga00Slider"..threshold.key, configFrame, "OptionsSliderTemplate")
+        slider:SetPoint("TOPLEFT", 30, thresholdY)
+        slider:SetMinMaxValues(threshold.min, threshold.max)
+        slider:SetValue(kuga00Settings.thresholds[threshold.key] or threshold.min)
+        slider:SetValueStep(1)
+        slider:SetObeyStepOnDrag(true)
+        slider.tooltipText = "Set threshold for " .. threshold.label
+        getglobal(slider:GetName() .. 'Low'):SetText(threshold.min)
+        getglobal(slider:GetName() .. 'High'):SetText(threshold.max)
+        getglobal(slider:GetName() .. 'Text'):SetText(threshold.label .. ": " .. slider:GetValue())
+        
+        slider:SetScript("OnValueChanged", function(self, value)
+            kuga00Settings.thresholds[threshold.key] = value
+            getglobal(self:GetName() .. 'Text'):SetText(threshold.label .. ": " .. value)
+        end)
+        
+        configFrame.sliders[threshold.key] = slider
+        thresholdY = thresholdY - 40
+    end
+
+    -- Color picker
+    local colorY = thresholdY - 10
+    local colorLabel = configFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    colorLabel:SetPoint("TOPLEFT", 20, colorY)
+    colorLabel:SetText("Highlight Color:")
+
+    local colorButton = CreateFrame("Button", nil, configFrame, "BackdropTemplate")
+    colorButton:SetPoint("TOPLEFT", 30, colorY - 25)
+    colorButton:SetSize(40, 20)
+    colorButton:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8x8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true, tileSize = 16, edgeSize = 16,
+        insets = { left = 4, right = 4, top = 4, bottom = 4 }
+    })
+    local c = kuga00Settings.colors and kuga00Settings.colors.highlight
+    if c and type(c.r) == "number" and type(c.g) == "number" and type(c.b) == "number" then
+        if CreateColor then
+            pcall(function()
+                colorButton:SetBackdropColor(CreateColor(c.r, c.g, c.b, 1))
+            end)
+        else
+            pcall(function()
+                colorButton:SetBackdropColor({r = c.r, g = c.g, b = c.b, a = 1})
+            end)
+        end
+    else
+        -- Set default green color
+        if CreateColor then
+            pcall(function()
+                colorButton:SetBackdropColor(CreateColor(0, 1, 0, 1))
+            end)
+        else
+            pcall(function()
+                colorButton:SetBackdropColor({r = 0, g = 1, b = 0, a = 1})
+            end)
+        end
+    end
+
+    colorButton:SetScript("OnClick", function()
+        -- For now, just open a simple message - color picker is too problematic
+        print("Color picker support coming soon. Current color: Green (0, 1, 0)")
+        print("You can modify colors by editing the saved variables manually.")
+    end)
+
+    -- Close button
     local closeBtn = CreateFrame("Button", nil, configFrame, "UIPanelButtonTemplate")
     closeBtn:SetSize(100, 24)
-    closeBtn:SetPoint("BOTTOM", configFrame, "BOTTOM", 0, 12)
+    closeBtn:SetPoint("BOTTOM", 0, 10)
     closeBtn:SetText("Close")
     closeBtn:SetScript("OnClick", function()
         configFrame:Hide()
@@ -130,6 +236,15 @@ function CreateOptionsUI()
 
     -- mark UI created
     kuga00_CreateOptionsUI = true
+    
+    -- Register with Interface Options
+    configFrame.name = "kuga00"
+    if InterfaceOptions_AddCategory then
+        InterfaceOptions_AddCategory(configFrame)
+    elseif Settings and Settings.RegisterCanvasLayoutCategory then
+        local category = Settings.RegisterCanvasLayoutCategory(configFrame, "kuga00")
+        Settings.RegisterAddOnCategory(category)
+    end
 end
 
 -- Function to get current combo points
@@ -298,13 +413,17 @@ local function UpdateClassStats()
                     local displayKey = key:gsub("(%l)(%u)", "%1 %2"):gsub("^%l", string.upper)
                     local statStr = displayKey .. ": " .. tostring(numValue)
 
-                    -- Color thresholds
-                    if key == "chi" and safeAtLeast(numValue, 2) then
-                        statStr = "|cff00ff00" .. statStr .. "|r"
-                        highlight = true
-                    elseif key == "holyPower" and safeAtLeast(numValue, 3) then
-                        statStr = "|cff00ff00" .. statStr .. "|r"
-                        highlight = true
+                    -- Color thresholds using saved settings
+                    local threshold = kuga00Settings.thresholds[key]
+                    if threshold and safeAtLeast(numValue, threshold) then
+                        local c = kuga00Settings.colors and kuga00Settings.colors.highlight
+                        if c and type(c.r) == "number" and type(c.g) == "number" and type(c.b) == "number" then
+                            local colorCode = string.format("|cff%02x%02x%02x", c.r * 255, c.g * 255, c.b * 255)
+                            statStr = colorCode .. statStr .. "|r"
+                            highlight = true
+                        else
+                            highlight = true
+                        end
                     end
 
                     table.insert(parts, statStr)
@@ -327,9 +446,18 @@ local function UpdateClassStats()
                 infoFrame:Show()
             end
             statsText:SetText(finalText)
-            -- Also tint the whole text if any stat is highlighted (so energy/chi green works even if color codes are stripped)
+            -- Also tint the whole text if any stat is highlighted
             if highlight then
-                statsText:SetTextColor(0, 1, 0, 1)
+                local c = kuga00Settings.colors and kuga00Settings.colors.highlight
+                if c and type(c.r) == "number" and type(c.g) == "number" and type(c.b) == "number" then
+                    if CreateColor then
+                        statsText:SetTextColor(CreateColor(c.r, c.g, c.b, 1))
+                    else
+                        statsText:SetTextColor(c.r, c.g, c.b, 1)
+                    end
+                else
+                    statsText:SetTextColor(0, 1, 0, 1)  -- Default green
+                end
             else
                 statsText:SetTextColor(1, 1, 1, 1)
             end
