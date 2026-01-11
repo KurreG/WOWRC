@@ -1,6 +1,6 @@
 # kuga00 AddOn - Resource Counter
 
-A World of Warcraft addon that displays class-specific resource counters (Combo Points, Chi, Holy Power, Energy, Rage, Focus, Runic Power, Soul Shards) with customizable thresholds, colors, and display options.
+A World of Warcraft addon that displays class-specific resource counters (Combo Points, Chi, Holy Power, Energy, Rage, Focus, Runic Power, Soul Shards) with customizable thresholds, colors, position, and display options.
 
 ## Features
 
@@ -18,17 +18,23 @@ A World of Warcraft addon that displays class-specific resource counters (Combo 
 ### Display Options
 - **Show/Hide Power Names**: Toggle between "Chi: 5" or just "5"
 - **8 Text Sizes**: Small (18), Medium (20), Large (24), Extra Large (28), Huge (32), Massive (36), Giant (40), Colossal (44)
+- **Customizable Position**: Move the counter anywhere on screen with sliders
+  - Horizontal slider: -500 to 500 (left/right)
+  - Vertical slider: -500 to 500 (down/up)
+  - Reset button to restore default position
 - **Customizable Thresholds**: Set color highlight thresholds for Chi, Holy Power, and Combo Points
-- **Custom Highlight Color**: Customize the color when resources reach threshold values
+- **Custom Highlight Color**: Customize the color when resources reach threshold values (displayed on color picker button)
 
 ### Per-Class Control
 - Enable/disable resource tracking for any class
 - Settings persist across sessions
 
 ### UI Integration
-- Full options panel accessible via:
+- Full options panel with resizable window accessible via:
   - `ESC` → `Interface` → `AddOns` → `kuga00`
   - `/kuga00 opt` command
+- Options window can be moved and resized
+- All settings update in real-time
 
 ### Slash Commands
 - `/kuga00 opt` - Open options panel
@@ -38,7 +44,7 @@ A World of Warcraft addon that displays class-specific resource counters (Combo 
 
 ## Installation
 1. Extract the `kuga00` folder to your `World of Warcraft\_retail_\Interface\AddOns\` directory
-2. Log in to WoW and reload the UI
+2. Log in to WoW and reload the UI (`/reload`)
 3. Access options via Interface → AddOns → kuga00
 
 ## Configuration
@@ -46,13 +52,21 @@ All settings are accessible through the in-game options panel:
 - Toggle which classes to track
 - Adjust threshold values for color highlighting
 - Change text size and display style
-- Customize highlight color
+- Customize highlight color (color picker shows current color)
+- Position the counter anywhere on screen
+- Resize the options window
 
-Settings are saved in `SavedVariables\kuga00Settings.lua`
+Settings are saved in `SavedVariables\kuga00Settings.lua` including:
+- Enabled classes
+- Threshold values
+- Highlight color
+- Text size
+- Counter position (x, y coordinates)
+- Show power names toggle
 
 ## Version
 Current: 0.2beta
-Interface: 120000 (Midnight/Dragonflight)
+Interface: 120001 (The War Within)
 
 ## Author
 kuga00

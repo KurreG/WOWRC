@@ -382,26 +382,10 @@ function CreateOptionsUI()
     })
     local c = kuga00Settings.colors and kuga00Settings.colors.highlight
     if c and type(c.r) == "number" and type(c.g) == "number" and type(c.b) == "number" then
-        if CreateColor then
-            pcall(function()
-                colorButton:SetBackdropColor(CreateColor(c.r, c.g, c.b, 1))
-            end)
-        else
-            pcall(function()
-                colorButton:SetBackdropColor({r = c.r, g = c.g, b = c.b, a = 1})
-            end)
-        end
+        colorButton:SetBackdropColor(c.r, c.g, c.b, 1)
     else
         -- Set default green color
-        if CreateColor then
-            pcall(function()
-                colorButton:SetBackdropColor(CreateColor(0, 1, 0, 1))
-            end)
-        else
-            pcall(function()
-                colorButton:SetBackdropColor({r = 0, g = 1, b = 0, a = 1})
-            end)
-        end
+        colorButton:SetBackdropColor(0, 1, 0, 1)
     end
 
     colorButton:SetScript("OnClick", function()
