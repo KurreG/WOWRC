@@ -23,6 +23,7 @@ evt:SetScript("OnEvent", function(self, event, name)
 
     local ver = resolveVersion()
     print("kuga00 v" .. tostring(ver) .. " loaded")
+    print("Access options via: ESC → Interface → AddOns → kuga00, or type /kuga00 opt")
     if not kuga00Settings then kuga00Settings = {} end
     if not kuga00Settings.enabledClasses then
         kuga00Settings.enabledClasses = {
@@ -57,6 +58,9 @@ evt:SetScript("OnEvent", function(self, event, name)
         }
     end
     print("kuga00 settings loaded")
+    
+    -- Create and register options UI at load time
+    CreateOptionsUI()
 end)
 
 -- Slash command to manage per-class enable/disable
@@ -88,10 +92,6 @@ SlashCmdList["KUGA"] = function(msg)
         end
         return
     elseif cmd == "options" or cmd == "opt" then
-        if not kuga00_CreateOptionsUI then
-            -- create UI on demand
-            CreateOptionsUI()
-        end
         if configFrame then
             configFrame:Show()
         end
@@ -240,9 +240,9 @@ function CreateOptionsUI()
     closeBtn:SetScript("OnClick", function()
         configFrame:Hide()
     end)
-
-    -- mark UI created
-    kuga00_CreateOptionsUI = true
+    
+    -- Hide frame by default (only show when user opens it)
+    configFrame:Hide()
     
     -- Register with Interface Options
     configFrame.name = "kuga00"
