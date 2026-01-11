@@ -57,6 +57,12 @@ evt:SetScript("OnEvent", function(self, event, name)
             highlight = { r = 0, g = 1, b = 0 }, -- green
         }
     end
+    if kuga00Settings.showPowerNames == nil then
+        kuga00Settings.showPowerNames = true -- default to showing names
+    end
+    if not kuga00Settings.textSize then
+        kuga00Settings.textSize = 20 -- default to medium
+    end
     print("kuga00 settings loaded")
     
     -- Create and register options UI at load time
@@ -150,8 +156,53 @@ function CreateOptionsUI()
         y = y - 24
     end
 
+    -- Display options
+    local displayY = -420
+    local displayLabel = configFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    displayLabel:SetPoint("TOPLEFT", 20, displayY)
+    displayLabel:SetText("Display Options:")
+    
+    displayY = displayY - 25
+    local showNamesCheck = CreateFrame("CheckButton", "kuga00ShowNamesCheck", configFrame, "UICheckButtonTemplate")
+    showNamesCheck:SetPoint("TOPLEFT", 30, displayY)
+    showNamesCheck:SetChecked(kuga00Settings.showPowerNames)
+    showNamesCheck.text:SetText("Show Power Names (e.g., 'Chi: 5' vs '5')")
+    showNamesCheck:SetScript("OnClick", function(self)
+        kuga00Settings.showPowerNames = self:GetChecked()
+        print("kuga00: Power names " .. (kuga00Settings.showPowerNames and "enabled" or "disabled"))
+    end)
+    
+    -- Text size dropdown
+    displayY = displayY - 30
+    local sizeLabel = configFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    sizeLabel:SetPoint("TOPLEFT", 30, displayY)
+    sizeLabel:SetText("Text Size:")
+    
+    local textSizeDropdown = CreateFrame("Frame", "kuga00TextSizeDropdown", configFrame, "UIDropDownMenuTemplate")
+    textSizeDropdown:SetPoint("TOPLEFT", 120, displayY - 5)
+    
+    local textSizes = {18, 20, 24, 28, 32, 36, 40, 44}
+    local textSizeLabels = {"Small (18)", "Medium (20)", "Large (24)", "Extra Large (28)", "Huge (32)", "Massive (36)", "Giant (40)", "Colossal (44)"}
+    
+    UIDropDownMenu_Initialize(textSizeDropdown, function()
+        for i, size in ipairs(textSizes) do
+            local info = UIDropDownMenu_CreateInfo()
+            info.text = textSizeLabels[i]
+            info.value = size
+            info.checked = (kuga00Settings.textSize == size)
+            info.func = function()
+                kuga00Settings.textSize = size
+                UIDropDownMenu_SetSelectedValue(textSizeDropdown, size)
+                print("kuga00: Text size set to " .. size)
+            end
+            UIDropDownMenu_AddButton(info)
+        end
+    end)
+    
+    UIDropDownMenu_SetSelectedValue(textSizeDropdown, kuga00Settings.textSize)
+    
     -- Threshold settings
-    local thresholdY = -420
+    local thresholdY = displayY - 40
     local thresholdLabel = configFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     thresholdLabel:SetPoint("TOPLEFT", 20, thresholdY)
     thresholdLabel:SetText("Threshold Values:")
@@ -373,7 +424,8 @@ infoFrame:SetSize(300, 100)
 infoFrame:SetPoint("CENTER", 0, -100)
 
 -- Create text for stats display
-local statsText = infoFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+local statsText = infoFrame:CreateFontString(nil, "OVERLAY")
+statsText:SetFont("Fonts\\FRIZQT__.TTF", 16) -- default size, will be updated once settings load
 statsText:SetPoint("CENTER", infoFrame, "CENTER", 0, 0)
 statsText:SetText("")
 statsText:SetTextColor(1, 1, 1, 1)  -- White text
@@ -381,6 +433,11 @@ statsText:SetTextColor(1, 1, 1, 1)  -- White text
 -- Update function
 local function UpdateClassStats()
     local success, err = pcall(function()
+        -- Update text size if settings exist
+        if statsText and kuga00Settings and kuga00Settings.textSize then
+            statsText:SetFont("Fonts\\FRIZQT__.TTF", kuga00Settings.textSize)
+        end
+        
         local class, spec = GetPlayerClassAndSpec()
         -- respect per-class enable/disable settings (default enabled)
         local enabled = true
@@ -418,7 +475,12 @@ local function UpdateClassStats()
                 if type(key) == "string" and type(value) == "number" then
                     local numValue = tonumber(value) or 0
                     local displayKey = key:gsub("(%l)(%u)", "%1 %2"):gsub("^%l", string.upper)
-                    local statStr = displayKey .. ": " .. tostring(numValue)
+                    local statStr
+                    if kuga00Settings.showPowerNames then
+                        statStr = displayKey .. ": " .. tostring(numValue)
+                    else
+                        statStr = tostring(numValue)
+                    end
 
                     -- Color thresholds using saved settings
                     local threshold = kuga00Settings.thresholds[key]
