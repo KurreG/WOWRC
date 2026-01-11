@@ -205,8 +205,15 @@ function GetClassRelevantStats()
         stats.mana = ensureNumber(GetManaCount())
         stats.holyPower = ensureNumber(GetHolyPowerCount())
     elseif class == "MONK" then
-        stats.chi = ensureNumber(GetChiCount())
-        stats.energy = ensureNumber(GetEnergyCount())
+        local spec = GetSpecialization()
+        if spec == 1 then -- Brewmaster
+            stats.energy = ensureNumber(GetEnergyCount())
+        elseif spec == 3 then -- Windwalker
+            stats.chi = ensureNumber(GetChiCount())
+            stats.energy = ensureNumber(GetEnergyCount())
+        else -- Mistweaver
+            stats.mana = ensureNumber(GetManaCount())
+        end
     elseif class == "DRUID" then
         local form = GetShapeshiftForm()
         if form == 1 then -- Bear form
@@ -234,7 +241,6 @@ local statsText = infoFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarg
 statsText:SetPoint("CENTER", infoFrame, "CENTER", 0, 0)
 statsText:SetText("")
 statsText:SetTextColor(1, 1, 1, 1)  -- White text
-local lastStatsText = nil
 
 -- Update function
 local function UpdateClassStats()
@@ -252,7 +258,6 @@ local function UpdateClassStats()
             if infoFrame and infoFrame:IsShown() then
                 infoFrame:Hide()
             end
-            lastStatsText = nil
             return
         else
             if infoFrame and not infoFrame:IsShown() then
@@ -267,6 +272,21 @@ local function UpdateClassStats()
                 if type(key) == "string" and type(value) == "number" then
                     local displayKey = key:gsub("(%l)(%u)", "%1 %2"):gsub("^%l", string.upper)
                     local statStr = displayKey .. ": " .. tostring(value)
+                    
+                    -- Safely check and color values
+                    local canCompare, shouldColor = pcall(function()
+                        if key == "chi" then
+                            return value >= 2
+                        elseif key == "energy" then
+                            return value >= 55
+                        end
+                        return false
+                    end)
+                    
+                    if canCompare and shouldColor then
+                        statStr = "|cff00ff00" .. statStr .. "|r"
+                    end
+                    
                     if type(statStr) == "string" then
                         table.insert(parts, statStr)
                     end
@@ -287,10 +307,8 @@ local function UpdateClassStats()
             end
         end
 
-        if lastStatsText ~= finalText then
-            statsText:SetText(finalText)
-            lastStatsText = finalText
-        end
+        -- Always update without storing state
+        statsText:SetText(finalText)
     end)
     if not success then
         -- on error, do not spam UI; print to chat once
@@ -302,7 +320,7 @@ end
 local updateCounter = 0
 infoFrame:SetScript("OnUpdate", function(self, elapsed)
     updateCounter = updateCounter + elapsed
-    if updateCounter >= 0.5 then  -- Update every 0.5 seconds
+    if updateCounter >= 0.1 then  -- Update every 0.1 seconds
         updateCounter = 0
         UpdateClassStats()
     end
