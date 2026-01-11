@@ -69,12 +69,15 @@ evt:SetScript("OnEvent", function(self, event, name)
     if not kuga00Settings.position then
         kuga00Settings.position = { x = 0, y = -100 } -- default position
     end
+    if kuga00Settings.attachToCursor == nil then
+        kuga00Settings.attachToCursor = false -- default to not attached
+    end
     print("kuga00 settings loaded")
     
     -- Apply saved position to the frame
     if infoFrame then
         infoFrame:ClearAllPoints()
-        infoFrame:SetPoint("CENTER", kuga00Settings.position.x, kuga00Settings.position.y)
+        infoFrame:SetPoint("CENTER", UIParent, "CENTER", kuga00Settings.position.x, kuga00Settings.position.y)
     end
     
     -- Create and register options UI at load time
@@ -86,7 +89,11 @@ SLASH_KUGA1 = "/kuga00"
 SlashCmdList["KUGA"] = function(msg)
     local cmd, cls = msg:match("^(%S+)%s*(%S*)")
     if not cmd then
-        print("Usage: /kuga00 enable|disable <CLASS> | /kuga00 status")
+        print("Usage:")
+        print("/kuga00 enable | disable <CLASS>")
+        print("/kuga00 status")
+        print("/kuga00 cursor on | off")
+        print("/kuga00 opt | option")
         return
     end
     cmd = cmd:lower()
@@ -109,13 +116,57 @@ SlashCmdList["KUGA"] = function(msg)
             print(string.format("%s : %s", k, v and "enabled" or "disabled"))
         end
         return
+    elseif cmd == "cursor" then
+        local action = (cls or ""):lower()
+        local attach
+        if action == "on" then
+            attach = true
+        elseif action == "off" then
+            attach = false
+        elseif action == "toggle" or action == "" then
+            attach = not kuga00Settings.attachToCursor
+        else
+            print("Usage: /kuga00 cursor on|off|toggle")
+            return
+        end
+
+        kuga00Settings.attachToCursor = attach
+
+        -- Update checkbox if options are open
+        local attachCursorCheck = _G["kuga00AttachCursorCheck"]
+        if attachCursorCheck then
+            attachCursorCheck:SetChecked(attach)
+        end
+
+        if infoFrame then
+            if attach then
+                -- Immediately reposition to current cursor with offsets
+                local cx, cy = GetCursorPosition()
+                local scale = UIParent and (UIParent.GetEffectiveScale and UIParent:GetEffectiveScale() or UIParent:GetScale()) or 1
+                cx = cx / scale
+                cy = cy / scale
+                local ox = (kuga00Settings.position and kuga00Settings.position.x) or 0
+                local oy = (kuga00Settings.position and kuga00Settings.position.y) or -100
+                infoFrame:ClearAllPoints()
+                infoFrame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", cx + ox, cy + oy)
+            else
+                -- Detach back to saved center-based position
+                local x = (kuga00Settings.position and kuga00Settings.position.x) or 0
+                local y = (kuga00Settings.position and kuga00Settings.position.y) or -100
+                infoFrame:ClearAllPoints()
+                infoFrame:SetPoint("CENTER", UIParent, "CENTER", x, y)
+            end
+        end
+
+        print("kuga00: attach-to-cursor " .. (attach and "enabled" or "disabled"))
+        return
     elseif cmd == "options" or cmd == "opt" then
         if configFrame then
             configFrame:Show()
         end
         return
     else
-        print("Usage: /kuga00 enable|disable <CLASS> | /kuga00 status")
+        print("Usage: /kuga00 enable|disable <CLASS> | /kuga00 status | /kuga00 cursor on|off|toggle | /kuga00 opt|options")
     end
 end
 
@@ -225,6 +276,25 @@ function CreateOptionsUI()
         print("kuga00: Power names " .. (kuga00Settings.showPowerNames and "enabled" or "disabled"))
     end)
     
+    -- Attach to cursor checkbox
+    displayY = displayY - 30
+    local attachCursorCheck = CreateFrame("CheckButton", "kuga00AttachCursorCheck", scrollChild, "UICheckButtonTemplate")
+    attachCursorCheck:SetPoint("TOPLEFT", 20, displayY)
+    attachCursorCheck:SetChecked(kuga00Settings.attachToCursor)
+    attachCursorCheck.text:SetText("Attach Counter to Cursor (sliders become offsets)")
+    attachCursorCheck:SetScript("OnClick", function(self)
+        kuga00Settings.attachToCursor = self:GetChecked()
+        if not kuga00Settings.attachToCursor and infoFrame then
+            -- When detaching, apply saved position relative to center
+            infoFrame:ClearAllPoints()
+            local x = (kuga00Settings.position and kuga00Settings.position.x) or 0
+            local y = (kuga00Settings.position and kuga00Settings.position.y) or -100
+            infoFrame:SetPoint("CENTER", UIParent, "CENTER", x, y)
+        end
+        local status = self:GetChecked() and "enabled" or "disabled"
+        print("kuga00: attach-to-cursor " .. status)
+    end)
+    
     -- Text size dropdown
     displayY = displayY - 30
     local sizeLabel = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -278,7 +348,7 @@ function CreateOptionsUI()
         if not kuga00Settings.position then kuga00Settings.position = {} end
         kuga00Settings.position.x = value
         getglobal(self:GetName() .. 'Text'):SetText("Horizontal: " .. value)
-        if infoFrame then
+        if infoFrame and not (kuga00Settings.attachToCursor) then
             infoFrame:ClearAllPoints()
             infoFrame:SetPoint("CENTER", UIParent, "CENTER", kuga00Settings.position.x, kuga00Settings.position.y or -100)
         end
@@ -302,7 +372,7 @@ function CreateOptionsUI()
         if not kuga00Settings.position then kuga00Settings.position = {} end
         kuga00Settings.position.y = value
         getglobal(self:GetName() .. 'Text'):SetText("Vertical: " .. value)
-        if infoFrame then
+        if infoFrame and not (kuga00Settings.attachToCursor) then
             infoFrame:ClearAllPoints()
             infoFrame:SetPoint("CENTER", UIParent, "CENTER", kuga00Settings.position.x or 0, kuga00Settings.position.y)
         end
@@ -685,6 +755,18 @@ end
 local updateCounter = 0
 infoFrame:SetScript("OnUpdate", function(self, elapsed)
     updateCounter = updateCounter + elapsed
+    -- When attached to cursor, update position each frame
+    if kuga00Settings and kuga00Settings.attachToCursor then
+        local cx, cy = GetCursorPosition()
+        -- Adjust for UI scale to get UIParent coordinates
+        local scale = UIParent and (UIParent.GetEffectiveScale and UIParent:GetEffectiveScale() or UIParent:GetScale()) or 1
+        cx = cx / scale
+        cy = cy / scale
+        local ox = (kuga00Settings.position and kuga00Settings.position.x) or 0
+        local oy = (kuga00Settings.position and kuga00Settings.position.y) or -100
+        self:ClearAllPoints()
+        self:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", cx + ox, cy + oy)
+    end
     if updateCounter >= 0.1 then  -- Update every 0.1 seconds
         updateCounter = 0
         UpdateClassStats()

@@ -22,6 +22,8 @@ A World of Warcraft addon that displays class-specific resource counters (Combo 
   - Horizontal slider: -500 to 500 (left/right)
   - Vertical slider: -500 to 500 (down/up)
   - Reset button to restore default position
+- **Attach to Cursor**: Optionally attach the counter to the mouse cursor
+  - Position sliders act as X/Y offsets relative to the cursor
 - **Customizable Thresholds**: Set color highlight thresholds for Chi, Holy Power, and Combo Points
 - **Custom Highlight Color**: Customize the color when resources reach threshold values (displayed on color picker button)
 
@@ -38,9 +40,19 @@ A World of Warcraft addon that displays class-specific resource counters (Combo 
 
 ### Slash Commands
 - `/kuga00 opt` - Open options panel
+- `/kuga00 option` - Open options panel (alias)
 - `/kuga00 enable <CLASS>` - Enable resource tracking for a class
 - `/kuga00 disable <CLASS>` - Disable resource tracking for a class
 - `/kuga00 status` - Show enable/disable status for all classes
+- `/kuga00 cursor on|off` - Attach/detach the counter to the cursor
+
+### Usage
+```
+/kuga00 enable|disable <CLASS>
+/kuga00 status
+/kuga00 cursor on|off
+/kuga00 opt|option
+```
 
 ## Installation
 1. Extract the `kuga00` folder to your `World of Warcraft\_retail_\Interface\AddOns\` directory
@@ -63,9 +75,10 @@ Settings are saved in `SavedVariables\kuga00Settings.lua` including:
 - Text size
 - Counter position (x, y coordinates)
 - Show power names toggle
+- Attach to cursor (position sliders act as offsets when enabled)
 
 ## Version
-Current: 0.2beta
+Current: 0.3beta
 Interface: 120001 (The War Within)
 
 ## Author
