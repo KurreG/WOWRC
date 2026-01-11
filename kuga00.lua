@@ -1,6 +1,9 @@
 -- Saved settings (persisted via TOC SavedVariables)
 -- kuga00Settings = { enabledClasses = { ROUGE=true, ... } }
 
+-- Declare infoFrame globally so it can be accessed from options UI
+local infoFrame
+
 -- Event frame to initialize saved vars
 local evt = CreateFrame("Frame")
 evt:RegisterEvent("ADDON_LOADED")
@@ -63,7 +66,16 @@ evt:SetScript("OnEvent", function(self, event, name)
     if not kuga00Settings.textSize then
         kuga00Settings.textSize = 20 -- default to medium
     end
+    if not kuga00Settings.position then
+        kuga00Settings.position = { x = 0, y = -100 } -- default position
+    end
     print("kuga00 settings loaded")
+    
+    -- Apply saved position to the frame
+    if infoFrame then
+        infoFrame:ClearAllPoints()
+        infoFrame:SetPoint("CENTER", kuga00Settings.position.x, kuga00Settings.position.y)
+    end
     
     -- Create and register options UI at load time
     CreateOptionsUI()
@@ -110,6 +122,15 @@ end
 -- Create options UI with checkboxes per class
 function CreateOptionsUI()
     if configFrame then return end
+    -- Ensure settings are initialized
+    if not kuga00Settings then
+        print("kuga00: Settings not loaded yet")
+        return
+    end
+    -- Ensure position table exists
+    if not kuga00Settings.position then
+        kuga00Settings.position = { x = 0, y = -100 }
+    end
     configFrame = CreateFrame("Frame", "kuga00ConfigFrame", UIParent, "BasicFrameTemplateWithInset")
     configFrame:SetSize(500, 600)
     configFrame:SetPoint("CENTER", 0, 0)
@@ -200,8 +221,84 @@ function CreateOptionsUI()
     
     UIDropDownMenu_SetSelectedValue(textSizeDropdown, kuga00Settings.textSize)
     
+    -- Position settings
+    displayY = displayY - 40
+    local positionLabel = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    positionLabel:SetPoint("TOPLEFT", 10, displayY)
+    positionLabel:SetText("Position:")
+    
+    displayY = displayY - 30
+    
+    -- X position slider
+    local xPosSlider = CreateFrame("Slider", "kuga00XPosSlider", scrollChild, "OptionsSliderTemplate")
+    xPosSlider:SetPoint("TOPLEFT", 20, displayY)
+    xPosSlider:SetMinMaxValues(-500, 500)
+    xPosSlider:SetValue((kuga00Settings.position and kuga00Settings.position.x) or 0)
+    xPosSlider:SetValueStep(1)
+    xPosSlider:SetObeyStepOnDrag(true)
+    xPosSlider.tooltipText = "Move counter left/right"
+    getglobal(xPosSlider:GetName() .. 'Low'):SetText("Left")
+    getglobal(xPosSlider:GetName() .. 'High'):SetText("Right")
+    getglobal(xPosSlider:GetName() .. 'Text'):SetText("Horizontal: " .. xPosSlider:GetValue())
+    
+    xPosSlider:SetScript("OnValueChanged", function(self, value)
+        if not kuga00Settings.position then kuga00Settings.position = {} end
+        kuga00Settings.position.x = value
+        getglobal(self:GetName() .. 'Text'):SetText("Horizontal: " .. value)
+        if infoFrame then
+            infoFrame:ClearAllPoints()
+            infoFrame:SetPoint("CENTER", UIParent, "CENTER", kuga00Settings.position.x, kuga00Settings.position.y or -100)
+        end
+    end)
+    
+    displayY = displayY - 40
+    
+    -- Y position slider
+    local yPosSlider = CreateFrame("Slider", "kuga00YPosSlider", scrollChild, "OptionsSliderTemplate")
+    yPosSlider:SetPoint("TOPLEFT", 20, displayY)
+    yPosSlider:SetMinMaxValues(-500, 500)
+    yPosSlider:SetValue((kuga00Settings.position and kuga00Settings.position.y) or -100)
+    yPosSlider:SetValueStep(1)
+    yPosSlider:SetObeyStepOnDrag(true)
+    yPosSlider.tooltipText = "Move counter up/down"
+    getglobal(yPosSlider:GetName() .. 'Low'):SetText("Down")
+    getglobal(yPosSlider:GetName() .. 'High'):SetText("Up")
+    getglobal(yPosSlider:GetName() .. 'Text'):SetText("Vertical: " .. yPosSlider:GetValue())
+    
+    yPosSlider:SetScript("OnValueChanged", function(self, value)
+        if not kuga00Settings.position then kuga00Settings.position = {} end
+        kuga00Settings.position.y = value
+        getglobal(self:GetName() .. 'Text'):SetText("Vertical: " .. value)
+        if infoFrame then
+            infoFrame:ClearAllPoints()
+            infoFrame:SetPoint("CENTER", UIParent, "CENTER", kuga00Settings.position.x or 0, kuga00Settings.position.y)
+        end
+    end)
+    
+    displayY = displayY - 30
+    
+    -- Reset position button
+    local resetPosBtn = CreateFrame("Button", nil, scrollChild, "UIPanelButtonTemplate")
+    resetPosBtn:SetSize(150, 24)
+    resetPosBtn:SetPoint("TOPLEFT", 20, displayY)
+    resetPosBtn:SetText("Reset Position")
+    resetPosBtn:SetScript("OnClick", function()
+        if not kuga00Settings.position then kuga00Settings.position = {} end
+        kuga00Settings.position.x = 0
+        kuga00Settings.position.y = -100
+        xPosSlider:SetValue(0)
+        yPosSlider:SetValue(-100)
+        if infoFrame then
+            infoFrame:ClearAllPoints()
+            infoFrame:SetPoint("CENTER", UIParent, "CENTER", 0, -100)
+        end
+        print("kuga00: Position reset to default")
+    end)
+    
+    displayY = displayY - 40
+    
     -- Threshold settings
-    local thresholdY = displayY - 40
+    local thresholdY = displayY
     local thresholdLabel = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     thresholdLabel:SetPoint("TOPLEFT", 10, thresholdY)
     thresholdLabel:SetText("Threshold Values:")
@@ -418,9 +515,12 @@ function GetClassRelevantStats()
 end
 
 -- Create a simple frame for text display
-local infoFrame = CreateFrame("Frame", "ClassInfoDisplay", UIParent)
+infoFrame = CreateFrame("Frame", "ClassInfoDisplay", UIParent)
 infoFrame:SetSize(300, 100)
-infoFrame:SetPoint("CENTER", 0, -100)
+-- Use saved position settings (will be updated after settings load)
+local posX = 0
+local posY = -100
+infoFrame:SetPoint("CENTER", UIParent, "CENTER", posX, posY)
 
 -- Create text for stats display
 local statsText = infoFrame:CreateFontString(nil, "OVERLAY")
