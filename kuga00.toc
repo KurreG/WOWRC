@@ -2,7 +2,7 @@
 ## Title: |cFF30D1FFkuga00 AddOn (Midnight)|r
 ## Notes: |cFF30D1FFResourse Points Counter by kuga00|r
 ## Author: kuga00
-## Version: 0.1beta
+## Version: 0.2beta
 ## DefaultState: Enabled
 ## LoadOnDemand: 0
 ## SavedVariables: kuga00Settings

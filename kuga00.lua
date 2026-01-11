@@ -123,14 +123,14 @@ function CreateOptionsUI()
     configFrame.title:SetPoint("TOP", 0, -5)
     configFrame.title:SetText("kuga00 Options")
 
-    -- Scroll frame for classes
+    -- Scroll frame for all content
     local scrollFrame = CreateFrame("ScrollFrame", nil, configFrame, "UIPanelScrollFrameTemplate")
     scrollFrame:SetPoint("TOPLEFT", 10, -30)
-    scrollFrame:SetPoint("BOTTOMRIGHT", -30, 200)
+    scrollFrame:SetPoint("BOTTOMRIGHT", -30, 50)
     
     local scrollChild = CreateFrame("Frame")
     scrollFrame:SetScrollChild(scrollChild)
-    scrollChild:SetSize(450, 300)
+    scrollChild:SetSize(450, 1200)  -- Increased height to accommodate all content
 
     -- Class enable/disable checkboxes
     local classLabel = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -155,16 +155,15 @@ function CreateOptionsUI()
         configFrame.checkboxes[cls] = cb
         y = y - 24
     end
-
     -- Display options
-    local displayY = -420
-    local displayLabel = configFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    displayLabel:SetPoint("TOPLEFT", 20, displayY)
+    local displayY = y - 15
+    local displayLabel = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    displayLabel:SetPoint("TOPLEFT", 10, displayY)
     displayLabel:SetText("Display Options:")
     
     displayY = displayY - 25
-    local showNamesCheck = CreateFrame("CheckButton", "kuga00ShowNamesCheck", configFrame, "UICheckButtonTemplate")
-    showNamesCheck:SetPoint("TOPLEFT", 30, displayY)
+    local showNamesCheck = CreateFrame("CheckButton", "kuga00ShowNamesCheck", scrollChild, "UICheckButtonTemplate")
+    showNamesCheck:SetPoint("TOPLEFT", 20, displayY)
     showNamesCheck:SetChecked(kuga00Settings.showPowerNames)
     showNamesCheck.text:SetText("Show Power Names (e.g., 'Chi: 5' vs '5')")
     showNamesCheck:SetScript("OnClick", function(self)
@@ -174,12 +173,12 @@ function CreateOptionsUI()
     
     -- Text size dropdown
     displayY = displayY - 30
-    local sizeLabel = configFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    sizeLabel:SetPoint("TOPLEFT", 30, displayY)
+    local sizeLabel = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    sizeLabel:SetPoint("TOPLEFT", 20, displayY)
     sizeLabel:SetText("Text Size:")
     
-    local textSizeDropdown = CreateFrame("Frame", "kuga00TextSizeDropdown", configFrame, "UIDropDownMenuTemplate")
-    textSizeDropdown:SetPoint("TOPLEFT", 120, displayY - 5)
+    local textSizeDropdown = CreateFrame("Frame", "kuga00TextSizeDropdown", scrollChild, "UIDropDownMenuTemplate")
+    textSizeDropdown:SetPoint("TOPLEFT", 110, displayY - 5)
     
     local textSizes = {18, 20, 24, 28, 32, 36, 40, 44}
     local textSizeLabels = {"Small (18)", "Medium (20)", "Large (24)", "Extra Large (28)", "Huge (32)", "Massive (36)", "Giant (40)", "Colossal (44)"}
@@ -203,8 +202,8 @@ function CreateOptionsUI()
     
     -- Threshold settings
     local thresholdY = displayY - 40
-    local thresholdLabel = configFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    thresholdLabel:SetPoint("TOPLEFT", 20, thresholdY)
+    local thresholdLabel = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    thresholdLabel:SetPoint("TOPLEFT", 10, thresholdY)
     thresholdLabel:SetText("Threshold Values:")
 
     local thresholds = {
@@ -216,8 +215,8 @@ function CreateOptionsUI()
     configFrame.sliders = {}
     thresholdY = thresholdY - 25
     for i, threshold in ipairs(thresholds) do
-        local slider = CreateFrame("Slider", "kuga00Slider"..threshold.key, configFrame, "OptionsSliderTemplate")
-        slider:SetPoint("TOPLEFT", 30, thresholdY)
+        local slider = CreateFrame("Slider", "kuga00Slider"..threshold.key, scrollChild, "OptionsSliderTemplate")
+        slider:SetPoint("TOPLEFT", 20, thresholdY)
         slider:SetMinMaxValues(threshold.min, threshold.max)
         slider:SetValue(kuga00Settings.thresholds[threshold.key] or threshold.min)
         slider:SetValueStep(1)
@@ -238,12 +237,12 @@ function CreateOptionsUI()
 
     -- Color picker
     local colorY = thresholdY - 10
-    local colorLabel = configFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    colorLabel:SetPoint("TOPLEFT", 20, colorY)
+    local colorLabel = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    colorLabel:SetPoint("TOPLEFT", 10, colorY)
     colorLabel:SetText("Highlight Color:")
 
-    local colorButton = CreateFrame("Button", nil, configFrame, "BackdropTemplate")
-    colorButton:SetPoint("TOPLEFT", 30, colorY - 25)
+    local colorButton = CreateFrame("Button", nil, scrollChild, "BackdropTemplate")
+    colorButton:SetPoint("TOPLEFT", 20, colorY - 25)
     colorButton:SetSize(40, 20)
     colorButton:SetBackdrop({
         bgFile = "Interface\\Buttons\\WHITE8x8",

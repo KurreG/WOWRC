@@ -1,2 +1,58 @@
-# WOWRC
-Tying to make a wow addon to show Resource counters for all classes
+# kuga00 AddOn - Resource Counter
+
+A World of Warcraft addon that displays class-specific resource counters (Combo Points, Chi, Holy Power, Energy, Rage, Focus, Runic Power, Soul Shards) with customizable thresholds, colors, and display options.
+
+## Features
+
+### Resource Tracking
+- **Rogue**: Combo Points + Energy
+- **Warrior**: Rage
+- **Hunter**: Focus
+- **Warlock**: Soul Shards
+- **Death Knight**: Runic Power
+- **Paladin**: Holy Power
+- **Monk**: Chi (Windwalker only)
+- **Druid**: Rage (Guardian bear form) / Combo Points (Feral cat form)
+- **Priest/Mage/Shaman**: No tracked resources
+
+### Display Options
+- **Show/Hide Power Names**: Toggle between "Chi: 5" or just "5"
+- **8 Text Sizes**: Small (18), Medium (20), Large (24), Extra Large (28), Huge (32), Massive (36), Giant (40), Colossal (44)
+- **Customizable Thresholds**: Set color highlight thresholds for Chi, Holy Power, and Combo Points
+- **Custom Highlight Color**: Customize the color when resources reach threshold values
+
+### Per-Class Control
+- Enable/disable resource tracking for any class
+- Settings persist across sessions
+
+### UI Integration
+- Full options panel accessible via:
+  - `ESC` → `Interface` → `AddOns` → `kuga00`
+  - `/kuga00 opt` command
+
+### Slash Commands
+- `/kuga00 opt` - Open options panel
+- `/kuga00 enable <CLASS>` - Enable resource tracking for a class
+- `/kuga00 disable <CLASS>` - Disable resource tracking for a class
+- `/kuga00 status` - Show enable/disable status for all classes
+
+## Installation
+1. Extract the `kuga00` folder to your `World of Warcraft\_retail_\Interface\AddOns\` directory
+2. Log in to WoW and reload the UI
+3. Access options via Interface → AddOns → kuga00
+
+## Configuration
+All settings are accessible through the in-game options panel:
+- Toggle which classes to track
+- Adjust threshold values for color highlighting
+- Change text size and display style
+- Customize highlight color
+
+Settings are saved in `SavedVariables\kuga00Settings.lua`
+
+## Version
+Current: 0.2beta
+Interface: 120000 (Midnight/Dragonflight)
+
+## Author
+kuga00
