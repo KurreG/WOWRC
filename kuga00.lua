@@ -207,10 +207,9 @@ function GetClassRelevantStats()
     elseif class == "MONK" then
         local spec = GetSpecialization()
         if spec == 1 then -- Brewmaster
-            stats.energy = ensureNumber(GetEnergyCount())
+            -- no tracked resource
         elseif spec == 3 then -- Windwalker
             stats.chi = ensureNumber(GetChiCount())
-            stats.energy = ensureNumber(GetEnergyCount())
         else -- Mistweaver
             stats.mana = ensureNumber(GetManaCount())
         end
@@ -267,29 +266,30 @@ local function UpdateClassStats()
 
         local stats = GetClassRelevantStats()
         local parts = {}
+        local highlight = false
+
+        -- helper to guard against protected/secret values when comparing
+        local function safeAtLeast(val, threshold)
+            if type(val) ~= "number" then return false end
+            local ok, res = pcall(function()
+                return val >= threshold
+            end)
+            return ok and res or false
+        end
         if stats and type(stats) == "table" then
             for key, value in pairs(stats) do
                 if type(key) == "string" and type(value) == "number" then
+                    local numValue = tonumber(value) or 0
                     local displayKey = key:gsub("(%l)(%u)", "%1 %2"):gsub("^%l", string.upper)
-                    local statStr = displayKey .. ": " .. tostring(value)
-                    
-                    -- Safely check and color values
-                    local canCompare, shouldColor = pcall(function()
-                        if key == "chi" then
-                            return value >= 2
-                        elseif key == "energy" then
-                            return value >= 55
-                        end
-                        return false
-                    end)
-                    
-                    if canCompare and shouldColor then
+                    local statStr = displayKey .. ": " .. tostring(numValue)
+
+                    -- Color thresholds
+                    if key == "chi" and safeAtLeast(numValue, 2) then
                         statStr = "|cff00ff00" .. statStr .. "|r"
+                        highlight = true
                     end
-                    
-                    if type(statStr) == "string" then
-                        table.insert(parts, statStr)
-                    end
+
+                    table.insert(parts, statStr)
                 end
             end
         end
@@ -309,6 +309,12 @@ local function UpdateClassStats()
 
         -- Always update without storing state
         statsText:SetText(finalText)
+        -- Also tint the whole text if any stat is highlighted (so energy/chi green works even if color codes are stripped)
+        if highlight then
+            statsText:SetTextColor(0, 1, 0, 1)
+        else
+            statsText:SetTextColor(1, 1, 1, 1)
+        end
     end)
     if not success then
         -- on error, do not spam UI; print to chat once
