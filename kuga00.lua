@@ -135,10 +135,39 @@ function CreateOptionsUI()
     configFrame:SetSize(500, 600)
     configFrame:SetPoint("CENTER", 0, 0)
     configFrame:SetMovable(true)
+    configFrame:SetResizable(true)
+    -- Use SetResizeBounds for compatibility across client versions
+    if configFrame.SetResizeBounds then
+        configFrame:SetResizeBounds(380, 420)
+    end
     configFrame:EnableMouse(true)
     configFrame:RegisterForDrag("LeftButton")
     configFrame:SetScript("OnDragStart", configFrame.StartMoving)
     configFrame:SetScript("OnDragStop", configFrame.StopMovingOrSizing)
+
+    -- Resize handle (bottom-right)
+    local resizeButton = CreateFrame("Button", nil, configFrame)
+    resizeButton:SetSize(16, 16)
+    resizeButton:SetPoint("BOTTOMRIGHT", -6, 6)
+    resizeButton:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+    resizeButton:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
+    resizeButton:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
+    resizeButton:SetScript("OnMouseDown", function(self)
+        self:GetParent():StartSizing("BOTTOMRIGHT")
+        self:GetParent():SetUserPlaced(true)
+    end)
+    resizeButton:SetScript("OnMouseUp", function(self)
+        self:GetParent():StopMovingOrSizing()
+    end)
+
+    -- Adjust scroll width when frame is resized
+    configFrame:SetScript("OnSizeChanged", function(self, width)
+        local usableWidth = width - 50
+        if usableWidth < 300 then usableWidth = 300 end
+        if self.scrollChild then
+            self.scrollChild:SetWidth(usableWidth)
+        end
+    end)
 
     configFrame.title = configFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     configFrame.title:SetPoint("TOP", 0, -5)
@@ -152,6 +181,10 @@ function CreateOptionsUI()
     local scrollChild = CreateFrame("Frame")
     scrollFrame:SetScrollChild(scrollChild)
     scrollChild:SetSize(450, 1200)  -- Increased height to accommodate all content
+    
+    -- Keep references for resize handling
+    configFrame.scrollFrame = scrollFrame
+    configFrame.scrollChild = scrollChild
 
     -- Class enable/disable checkboxes
     local classLabel = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -435,6 +468,28 @@ end
 function GetRunicPowerCount()
     local result = UnitPower("player", 6)
     return type(result) == "number" and result or 0
+end
+
+-- Function to get current maelstrom weapon stacks
+function GetMaelstromCount()
+    -- Use only C_UnitAuras (combat-safe, no AuraUtil/UnitBuff)
+    if C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID then
+        -- Retail spellID for Maelstrom Weapon
+        local aura = C_UnitAuras.GetPlayerAuraBySpellID(344179)
+        if aura then
+            if aura.applications then return aura.applications end
+            if aura.charges then return aura.charges end
+        end
+        -- Legacy spellID fallback (older expansions)
+        local legacy = C_UnitAuras.GetPlayerAuraBySpellID(187878)
+        if legacy then
+            if legacy.applications then return legacy.applications end
+            if legacy.charges then return legacy.charges end
+        end
+    end
+
+    -- If C_UnitAuras missing, return 0
+    return 0
 end
 
 -- Function to get current chi
