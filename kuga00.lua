@@ -746,18 +746,6 @@ function GetClassRelevantStats()
             stats.rage = ensureNumber(GetRageCount())
         elseif spec == 2 and form == 2 then -- Feral in Cat form
             stats.comboPoints = ensureNumber(GetComboPointsCount())
-        elseif spec == 4 then -- Restoration (healer)
-            local success, pct = pcall(function()
-                local current = UnitPower("player", 0)
-                local max = UnitPowerMax("player", 0)
-                if current and max and max > 0 then
-                    return math.floor((current / max) * 100)
-                end
-                return nil
-            end)
-            if success and pct then
-                stats.mana = pct
-            end
         end
     elseif class == "PRIEST" then
         local spec = GetSpecialization()
