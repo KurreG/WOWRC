@@ -686,6 +686,17 @@ function GetArcaneChargesCount()
     return 0
 end
 
+-- Function to get current astral power (Balance Druid)
+function GetAstralPowerCount()
+    local ok, result = pcall(function()
+        return UnitPower("player", 8)
+    end)
+    if ok and type(result) == "number" then
+        return result
+    end
+    return 0
+end
+
 -- Function to get player class and spec
 function GetPlayerClassAndSpec()
     local class = UnitClassBase("player")
@@ -728,8 +739,10 @@ function GetClassRelevantStats()
     elseif class == "DRUID" then
         local spec = GetSpecialization()
         local form = GetShapeshiftForm()
-        -- Only track resources for Feral (spec 2) and Guardian (spec 3)
-        if spec == 3 and form == 1 then -- Guardian in Bear form
+        -- Track resources for Balance (spec 1), Feral (spec 2), and Guardian (spec 3)
+        if spec == 1 then -- Balance
+            stats.astralPower = ensureNumber(GetAstralPowerCount())
+        elseif spec == 3 and form == 1 then -- Guardian in Bear form
             stats.rage = ensureNumber(GetRageCount())
         elseif spec == 2 and form == 2 then -- Feral in Cat form
             stats.comboPoints = ensureNumber(GetComboPointsCount())
