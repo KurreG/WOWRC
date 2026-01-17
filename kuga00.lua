@@ -5,6 +5,9 @@
 local infoFrame
 local kuga00Version
 
+-- Cache for Purifying Brew charges (updated via events)
+local cachedPurifyingBrewCharges = 0
+
 -- Event frame to initialize saved vars
 local evt = CreateFrame("Frame")
 evt:RegisterEvent("ADDON_LOADED")
@@ -56,12 +59,28 @@ evt:SetScript("OnEvent", function(self, event, name)
             focus = 50,
             runicPower = 60,
             soulShards = 3,
+            purifyingBrew = 2,
         }
+    end
+    -- Ensure new thresholds exist even if table already present
+    if not kuga00Settings.thresholds.purifyingBrew then
+        kuga00Settings.thresholds.purifyingBrew = 2
     end
     if not kuga00Settings.colors then
         kuga00Settings.colors = {
             highlight = { r = 0, g = 1, b = 0 }, -- green
         }
+    end
+    -- Ensure highlight color exists even if colors table already present
+    if not kuga00Settings.colors.highlight then
+        kuga00Settings.colors.highlight = { r = 0, g = 1, b = 0 }
+    end
+    -- Ensure color values are valid numbers
+    if kuga00Settings.colors.highlight then
+        local c = kuga00Settings.colors.highlight
+        if type(c.r) ~= "number" then c.r = 0 end
+        if type(c.g) ~= "number" then c.g = 1 end
+        if type(c.b) ~= "number" then c.b = 0 end
     end
     if kuga00Settings.showPowerNames == nil then
         kuga00Settings.showPowerNames = true -- default to showing names
@@ -82,6 +101,9 @@ evt:SetScript("OnEvent", function(self, event, name)
         infoFrame:ClearAllPoints()
         infoFrame:SetPoint("CENTER", UIParent, "CENTER", kuga00Settings.position.x, kuga00Settings.position.y)
     end
+    
+    -- Initial update of Purifying Brew charges
+    UpdatePurifyingBrewCharges()
     
     -- Create and register options UI at load time
     CreateOptionsUI()
@@ -637,6 +659,89 @@ function GetInsanityCount()
     end
     return 0
 end
+-- Update Purifying Brew charges from spell data
+function UpdatePurifyingBrewCharges()
+    local baseId = 119582
+    
+    -- Try modern API first (C_Spell.GetSpellCharges)
+    if C_Spell and C_Spell.GetSpellCharges then
+        local ok, chargeInfo = pcall(function()
+            return C_Spell.GetSpellCharges(baseId)
+        end)
+        if ok and chargeInfo and chargeInfo.currentCharges ~= nil then
+            cachedPurifyingBrewCharges = chargeInfo.currentCharges
+            return
+        end
+    end
+    
+    -- Fallback to legacy API
+    local chargesFunc = _G and _G["GetSpellCharges"]
+    if chargesFunc then
+        local ok, current = pcall(function()
+            return chargesFunc(baseId)
+        end)
+        
+        if ok and current ~= nil then
+            cachedPurifyingBrewCharges = current
+        end
+    end
+end
+
+-- Update Healing Spheres count from spell data
+function UpdateHealingSphereCharges()
+    -- Healing Spheres/Gift of the Ox orbs aren't trackable via API
+    -- They are world objects, not buffs or charges
+    -- Try multiple possible spell IDs related to Gift of the Ox
+    
+    local spellIds = {
+        124458, -- Gift of the Ox (passive)
+        124503, -- Gift of the Ox (heal effect)
+        115072, -- Expel Harm (generates orb)
+        122281, -- Healing Elixirs
+    }
+    
+    -- Check for any related auras
+    if C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID then
+        for _, spellId in ipairs(spellIds) do
+            local ok, aura = pcall(function()
+                return C_UnitAuras.GetPlayerAuraBySpellID(spellId)
+            end)
+            if ok and aura then
+                if aura.applications and aura.applications > 0 then
+                    cachedHealingSphereCount = aura.applications
+                    return
+                elseif aura.charges and aura.charges > 0 then
+                    cachedHealingSphereCount = aura.charges
+                    return
+                end
+            end
+        end
+    end
+    
+    -- Legacy fallback - scan all buffs
+    if UnitBuff then
+        for i = 1, 40 do
+            local name, icon, count, debuffType, duration, expirationTime, source, isStealable, nameplateShowPersonal, spellId = UnitBuff("player", i)
+            if not name then break end
+            for _, id in ipairs(spellIds) do
+                if spellId == id and count and count > 0 then
+                    cachedHealingSphereCount = count
+                    return
+                end
+            end
+        end
+    end
+    
+    -- If no tracking method works, keep at 0
+    -- Note: Healing orbs are world objects and may not be trackable via API
+    cachedHealingSphereCount = 0
+end
+
+-- Function to get current Purifying Brew charges (Brewmaster Monk)
+function GetPurifyingBrewCount()
+    -- Return cached value from event-based tracking
+    return cachedPurifyingBrewCharges
+end
 -- Function to get current icicles (Frost Mage)
 function GetIciclesCount()
     -- Try using C_UnitAuras to get icicle stacks
@@ -730,7 +835,7 @@ function GetClassRelevantStats()
     elseif class == "MONK" then
         local spec = GetSpecialization()
         if spec == 1 then -- Brewmaster
-            -- no tracked resource
+            stats.purifyingBrew = ensureNumber(GetPurifyingBrewCount())
         elseif spec == 3 then -- Windwalker
             stats.chi = ensureNumber(GetChiCount())
         elseif spec == 2 then -- Mistweaver
@@ -841,9 +946,21 @@ local function UpdateClassStats()
                         statStr = tostring(numValue)
                     end
 
-                    -- Color thresholds using saved settings
+                    -- Color thresholds using saved settings (but not for Purifying Brew)
                     local threshold = kuga00Settings.thresholds[key]
-                    if threshold and safeAtLeast(numValue, threshold) then
+                    local meetsThreshold = false
+                    
+                    -- Skip highlight for purifyingBrew - always show in white
+                    if key ~= "purifyingBrew" and threshold then
+                        local ok, result = pcall(function()
+                            return safeAtLeast(numValue, threshold)
+                        end)
+                        if ok then
+                            meetsThreshold = result
+                        end
+                    end
+                    
+                    if meetsThreshold then
                         local c = kuga00Settings.colors and kuga00Settings.colors.highlight
                         if c and type(c.r) == "number" and type(c.g) == "number" and type(c.b) == "number" then
                             local colorCode = string.format("|cff%02x%02x%02x", c.r * 255, c.g * 255, c.b * 255)
@@ -874,20 +991,16 @@ local function UpdateClassStats()
                 infoFrame:Show()
             end
             statsText:SetText(finalText)
-            -- Also tint the whole text if any stat is highlighted
+            -- Apply highlight color to entire text if any stat meets threshold
             if highlight then
                 local c = kuga00Settings.colors and kuga00Settings.colors.highlight
                 if c and type(c.r) == "number" and type(c.g) == "number" and type(c.b) == "number" then
-                    if CreateColor then
-                        statsText:SetTextColor(CreateColor(c.r, c.g, c.b, 1))
-                    else
-                        statsText:SetTextColor(c.r, c.g, c.b, 1)
-                    end
+                    statsText:SetTextColor(c.r, c.g, c.b, 1)
                 else
                     statsText:SetTextColor(0, 1, 0, 1)  -- Default green
                 end
             else
-                statsText:SetTextColor(1, 1, 1, 1)
+                statsText:SetTextColor(1, 1, 1, 1)  -- White when no threshold met
             end
         else
             -- Hide frame when no stats to display
@@ -904,8 +1017,17 @@ end
 
 -- Register for updates
 local updateCounter = 0
+local chargeUpdateCounter = 0
 infoFrame:SetScript("OnUpdate", function(self, elapsed)
     updateCounter = updateCounter + elapsed
+    chargeUpdateCounter = chargeUpdateCounter + elapsed
+    
+    -- Update Purifying Brew charges frequently (every 0.05 seconds)
+    if chargeUpdateCounter >= 0.05 then
+        chargeUpdateCounter = 0
+        UpdatePurifyingBrewCharges()
+    end
+    
     -- When attached to cursor, update position each frame
     if kuga00Settings and kuga00Settings.attachToCursor then
         local cx, cy = GetCursorPosition()
@@ -926,3 +1048,11 @@ end)
 
 -- Show the frame
 infoFrame:Show()
+
+-- Event frame for SPELL_UPDATE_CHARGES (registered after function is defined)
+local chargeEvt = CreateFrame("Frame")
+chargeEvt:RegisterEvent("SPELL_UPDATE_CHARGES")
+chargeEvt:SetScript("OnEvent", function(self, event, ...)
+    -- Update Purifying Brew charges when any spell charges change
+    UpdatePurifyingBrewCharges()
+end)

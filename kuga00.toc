@@ -2,7 +2,7 @@
 ## Title: |cFF30D1FFkuga00 AddOn (Midnight)|r
 ## Notes: |cFF30D1FFDisplays class-specific resource counters, customizable thresholds, colors, and display options. by kuga00 |r
 ## Author: kuga00
-## Version: 0.6
+## Version: 0.7
 ## DefaultState: Enabled
 ## LoadOnDemand: 0
 ## SavedVariables: kuga00Settings

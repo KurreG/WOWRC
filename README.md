@@ -2,6 +2,16 @@
 
 A World of Warcraft addon that displays class-specific resource counters with customizable colors, position, and display options. Supports all 13 classes with spec-specific resource tracking.
 
+## What's New in 0.7
+
+### ✨ New Spec Support
+- **Brewmaster Monks**: Added Purifying Brew charge counter
+  - Displays current charges (0-2)
+  - Updates in real-time via spell charges API
+  - No threshold highlighting (always displays in white)
+
+---
+
 ## What's New in 0.6
 
 ### ✨ New Spec Support
@@ -42,7 +52,9 @@ A World of Warcraft addon that displays class-specific resource counters with cu
 - **Warlock**: Soul Shards
 - **Death Knight**: Runic Power
 - **Paladin**: Holy Power
-- **Monk**: Chi (Windwalker spec only)
+- **Monk**: 
+  - Chi (Windwalker spec)
+  - Purifying Brew charges (Brewmaster spec)
 - **Druid**: 
   - Balance spec: Astral Power
   - Guardian spec (Bear Form): Rage
@@ -131,7 +143,7 @@ Settings are saved in `SavedVariables\kuga00.lua` including:
 - **Color Customization**: Color changes require editing SavedVariables file directly (no in-game color picker yet)
 
 ## Version
-Current: 0.6
+Current: 0.7
 Interface: 120001 (The War Within | Midnight)
 
 ## Author
